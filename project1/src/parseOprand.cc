@@ -2,12 +2,13 @@
 #include<iostream>
 #include<string>
 #include<sstream>
+#include<spdlog/spdlog.h>
 using namespace std;
 
 
 int parseOpt(int argc,const char**argv,int &row,int &col){
     if(argc!=4){
-        cout<<"Usage: -i <rowDim> <colDim>"<<endl;
+        SPDLOG_ERROR("Usage: -i <rowDim> <colDim>");
         return -1;
     }
     
@@ -16,7 +17,7 @@ int parseOpt(int argc,const char**argv,int &row,int &col){
     string a2(argv[2]);
     string a3(argv[3]);
     if(a1!="-i"){
-        cout<<"Usage: -i <rowDim> <colDim>"<<endl;
+        SPDLOG_ERROR("Usage: -i <rowDim> <colDim>");
         return -1;
     }
     
@@ -30,7 +31,7 @@ int parseOpt(int argc,const char**argv,int &row,int &col){
     catch(const std::exception& e)
     {
         std::cerr << e.what() << '\n';
-        std::cerr <<"can not build stringsteam"<<std::endl;
+        SPDLOG_ERROR("can not build stringsteam");
         return -1;
     }
     
@@ -40,11 +41,14 @@ int parseOpt(int argc,const char**argv,int &row,int &col){
         stream2.exceptions(std::ios_base::failbit);
         stream1>>row;
         stream2>>col;
+        if(stream1.fail() or stream2.fail()){
+            throw std::runtime_error("can't read from stringstream");
+        }
     }
     catch(const std::exception& e)
     {
-        std::cerr << e.what() << '\n';
-        std::cerr <<"cannot read oprand"<<std::endl;
+        SPDLOG_ERROR( e.what() );
+        SPDLOG_ERROR("cannot read oprand,may be you need to input a number");
         return -1;
     }
     
