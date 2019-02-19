@@ -1,0 +1,1 @@
+int parseOpt(int argc,const char**argv,int &row,int &col);
