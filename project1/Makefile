@@ -3,27 +3,28 @@
 
 
 .PHONY:all
+#DEFINE='-DSPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG'
 BUILDPATH=build
 SRCPATH=src
-CUFILE=src/TiledMatrixMul.cu
-CCFILE=src/TiledMatrixMul.cc src/parseOprand.cc
+CUFILE=src/TiledMatrixMul.cu 
+CCFILE= src/parseOprand.cc
 CCOBJ := $(patsubst $(SRCPATH)/%.cc, $(BUILDPATH)/%.cc_o, $(CCFILE))
 
 
 CUOBJ := $(patsubst $(SRCPATH)/%.cu, $(BUILDPATH)/%.cu_o, $(CUFILE))
 
 
-CUFLAGS = -O3
-CCFLAGS = -O3 -std=c++14 -Wall  
+CUFLAGS = -O3 $(DEFINE)  -std=c++14
+CCFLAGS = -O3 -std=c++14 -Wall  $(DEFINE)
 LIB = -L/opt/cuda/lib64/ -lcudart -lpthread
-INC=-I/opt/cuda/include -I../inc -Iinc
+INC=-I/opt/cuda/include -I../inc -Iinc -Isrc
 
-all:$(BUILDPATH)/TiledMatrixMul $(BUILDPATH)/NormalMatrixMul
-
-$(BUILDPATH)/TiledMatrixMul:$(BUILDPATH)/TiledMatrixMul.cu_o $(BUILDPATH)/TiledMatrixMul.cc_o $(BUILDPATH)/parseOprand.cc_o
+all:$(BUILDPATH)/TiledMatrixMul 
+src/TiledMatrixMul.cu:src/TiledMatrixMul_kernel.cu
+	touch $@
+$(BUILDPATH)/TiledMatrixMul:$(BUILDPATH)/TiledMatrixMul.cu_o  $(BUILDPATH)/parseOprand.cc_o
 	g++  $(CCFLAGS) $^ $(LIB) -o $@;
 
-$(BUILDPATH)/NormalMatrixMul:
 
 $(CUOBJ): $(BUILDPATH)/%.cu_o:src/%.cu 
 	nvcc $(CUFLAGS) $(INC) $^ -c  -o $@

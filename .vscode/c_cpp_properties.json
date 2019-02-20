@@ -5,7 +5,10 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/inc/*",
-                "/opt/cuda/include/*"
+                "/opt/cuda/include/*",
+                "/usr/include/linux",
+                "/usr/include/c++/8.2.1/tr1",
+                "${workspaceFolder}/project1/src"
             ],
             "defines": [],
             "compilerPath": "/opt/cuda/bin/gcc",
