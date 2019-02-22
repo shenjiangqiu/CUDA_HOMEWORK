@@ -4,31 +4,60 @@
 #include<fstream>
 #include<string>
 #include<sstream>
-
+#include<memory>
 #include<parseOprand.hpp>
 #include<spdlog/spdlog.h>
 
 #include<TiledMatrixMul_kernel.cu>
 
+
+#ifndef USING_TILE
+#define USING_TILE 1
+#endif
+
+
 using namespace std;
+
+
 #ifndef blockSize
 #define blockSize 32//real size is blockSize*blockSize
 #endif
 
 int main(int argc, char const *argv[])
 {
+
+    spdlog::set_pattern("[%c] [%@] [%^-%L-%$] %v");
+    #if USING_TILE==1
+    SPDLOG_INFO("USING THE TILE ALGOR");
+    #else
+    SPDLOG_INFO("USING NORMAL ALGOR");
+    #endif
+    
+    SPDLOG_INFO("the blocksize is {}",blockSize);
     int row;
-    spdlog::set_pattern("[%c] [%s] [%^-%L-%$] %v");
+    
     
     if(0!=parseOpt(argc,argv,row)){
         SPDLOG_ERROR("parseOpt false");
         return -1;
     }
     SPDLOG_DEBUG("the row={} ",row);
-
-    auto martrix_A=new float[row*row];
-    auto martrix_B=new float[row*row];
-    auto martrix_output=new float[row*row];
+    float* martrix_A;
+    float* martrix_B;
+    float* martrix_output;
+    try
+    {
+        martrix_A=new float[row*row];
+        martrix_B=new float[row*row];
+        martrix_output=new float[row*row];
+    }
+    catch(const std::bad_alloc& e)
+    {
+        SPDLOG_ERROR( e.what() );
+        return -1;
+    }
+    
+    
 
 
     dim3 blockDim(blockSize,blockSize);
@@ -73,8 +102,11 @@ int main(int argc, char const *argv[])
         cudaEventCreate(&stop[i]);
     } 
     cudaEventRecord(start[0]);
+    #if USING_TILE==1
     tile<blockSize><<<gridDim,blockDim>>>(row,d_a,d_b,d_out);
-    //normal<<<gridDim,blockDim>>>(row,d_a,d_b,d_out);
+    #else
+    normal<<<gridDim,blockDim>>>(row,d_a,d_b,d_out);
+    #endif
     cudaEventRecord(stop[0]);
 
     
@@ -109,7 +141,12 @@ int main(int argc, char const *argv[])
     cudaEventSynchronize(stop[0]);
     float time=0;
     cudaEventElapsedTime(&time,start[0],stop[0]);
+    #if USING_TILE==1
     SPDLOG_INFO("the elapsed time of TILED with block size {} is {}",blockSize,time);
+    #else
+    SPDLOG_INFO("the elapsed time of NORMAL with block size {} is {}",blockSize,time);
+    #endif
+
 
    
     

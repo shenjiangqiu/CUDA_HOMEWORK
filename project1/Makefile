@@ -3,7 +3,9 @@
 
 
 .PHONY:all
-#DEFINE='-DSPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG'
+#DEFINE=-DSPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG -DUSING_TILE=0
+DEFINE=-DUSING_TILE=1
+#DEFINE=-DSPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG 
 BUILDPATH=build
 SRCPATH=src
 CUFILE=src/TiledMatrixMul.cu 
@@ -14,8 +16,8 @@ CCOBJ := $(patsubst $(SRCPATH)/%.cc, $(BUILDPATH)/%.cc_o, $(CCFILE))
 CUOBJ := $(patsubst $(SRCPATH)/%.cu, $(BUILDPATH)/%.cu_o, $(CUFILE))
 
 
-CUFLAGS = -O3 $(DEFINE)  -std=c++14
-CCFLAGS = -O3 -std=c++14 -Wall  $(DEFINE)
+CUFLAGS = -O3 $(DEFINE)  -std=c++11
+CCFLAGS = -O3 -std=c++11 -Wall  $(DEFINE)
 LIB = -L/opt/cuda/lib64/ -lcudart -lpthread
 INC=-I/opt/cuda/include -I../inc -Iinc -Isrc
 
