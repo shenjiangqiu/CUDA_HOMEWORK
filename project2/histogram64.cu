@@ -181,8 +181,10 @@ void histogram64(unsigned int *d_Histogram,unsigned char *d_Data,unsigned int by
     #ifdef K3
     QDEBUG("enter base_share");
     baseKernel64_share<<<gridSize,blockSize>>>(partial_histo,d_Data,byteCount);
-    
+    etLastCudaError("compute() execution failed\n");
     mergeHistogram64Kernel<<<64,MERGE_THREADBLOCK_SIZE>>>(d_Histogram,partial_histo,gridSize);
+    getLastCudaError("merge() execution failed\n");
+
     return;
     #endif
     #ifdef K4
@@ -260,7 +262,7 @@ int main(int argc,char**argv){
     double dAvgSecs = 1.0e-3 * (double)sdkGetTimerValue(&hTimer) / (double)1;
     printf("histogram64() time (average) : %.5f sec, %.4f MB/sec\n\n", dAvgSecs, ((double)byteCount * 1.0e-6) / dAvgSecs);
     printf("histogram64, Throughput = %.4f MB/s, Time = %.5f s, Size = %u Bytes, NumDevsUsed = %u, Workgroup = %u\n",
-           (1.0e-6 * (double)byteCount / dAvgSecs), dAvgSecs, byteCount, 1, HISTOGRAM64_THREADBLOCK_SIZE);
+           (1.0e-6 * (double)byteCount / dAvgSecs), dAvgSecs, byteCount, 1, 6*32);
 
     printf("\nValidating GPU results...\n");
     printf(" ...reading back GPU results\n");
