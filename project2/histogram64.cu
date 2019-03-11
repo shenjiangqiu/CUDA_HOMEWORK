@@ -36,12 +36,35 @@ __global__ void naiveKernel64(unsigned int *histo,unsigned char *data,int dim){
 
 }
 
-__global__ void baseKernel64(unsigned int *histo,unsigned char *data,int dim)
+__global__ void baseKernel64(unsigned int *histo,unsigned char *d_data,int dim){
+    unsigned allThreads=gridDim.x*blockDim.x;
+    unsigned index=threadIdx.x+blockIdx.x*blockDim.x;
+    
+    if(index<64){
+        histo[index]=0;
+    }//reset to 0;
+    int i=0;
+    while(index<dim){
+        unsigned char t_data=d_data[index];
+
+        unsigned int pos=(t_data>>2)&0x3FU;
+
+        atomicAdd(histo+pos,1);
+        index+=allThreads;
+    }
+}
+
 
 void histogram64(unsigned int *d_Histogram,unsigned char *d_Data,unsigned int byteCount){
     const int blockSize=6*32;//6 warp per block
     const int gridSize=240;
+    #ifdef naive
     naiveKernel64<<<gridSize,blockSize>>>(d_Histogram,d_Data,byteCount);
+    #else
+    #ifdef base
+    baseKernel64<<<gridSize,blockSize>>>(d_Histogram,d_Data,byteCount);
+    #endif
+    #endif
 }
 
 int main(int argc,char**argv){
