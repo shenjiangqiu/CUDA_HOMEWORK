@@ -190,11 +190,20 @@ void histogram64(unsigned int *d_Histogram,unsigned char *d_Data,unsigned int by
     #ifdef K4
     QDEBUG("enter private kernel")
     histogram64Kernel_private<<<gridSize,blockSize>>>(partial_histo,d_Data,byteCount);
+    uint* test=new int[100];
+    cudaMemcpy(test,partial_histo,100*sizeof(uint),cudaMemcpyDeviceToHost);
+    for(int i=0;i<100;i++){
+        QDEBUG(test[i]);
+    }
     QDEBUG("finish private kernel")
     getLastCudaError("compute() execution failed\n");
     
     mergeHistogram64Kernel<<<64,MERGE_THREADBLOCK_SIZE>>>(d_Histogram,partial_histo,gridSize);
     getLastCudaError("merge() execution failed\n");
+    cudaMemcpy(test,d_Histogram,100*sizeof(uint),cudaMemcpyDeviceToHost);
+    for(int i=0;i<100;i++){
+        QDEBUG(test[i]);
+    }
     return;
     #endif
 
