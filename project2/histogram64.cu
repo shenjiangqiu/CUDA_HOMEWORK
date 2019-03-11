@@ -58,13 +58,19 @@ __global__ void baseKernel64(unsigned int *histo,unsigned char *d_data,int dim){
 void histogram64(unsigned int *d_Histogram,unsigned char *d_Data,unsigned int byteCount){
     const int blockSize=6*32;//6 warp per block
     const int gridSize=240;
-    #ifdef naive
+    #ifdef KERNEL_NAIVE
+    QDEBUG("enter naive");
     naiveKernel64<<<gridSize,blockSize>>>(d_Histogram,d_Data,byteCount);
-    #else
-    #ifdef base
+    return;
+    #endif;
+
+    #ifdef KERNEL_BASE
+    QDEBUG("enter base");
     baseKernel64<<<gridSize,blockSize>>>(d_Histogram,d_Data,byteCount);
+    return;
     #endif
-    #endif
+
+    QERROR("NO Kernel selected!");
 }
 
 int main(int argc,char**argv){
