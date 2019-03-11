@@ -109,18 +109,17 @@ __global__ void histogram64Kernel_private(uint *d_PartialHistograms, uchar *d_Da
 
     //Merge per-warp histograms into per-block and write to global memory
     __syncthreads();
-    
+    uint sum = 0;
 
-    for (uint bin = threadIdx.x; bin < 64; bin += 6*32)
-    {
-        uint sum = 0;
+    if(threadIdx.x<64){
+        
 
         for (uint i = 0; i < WARP_COUNT; i++)
         {
-            sum += s_Hist[bin + i * 64] ;
+            sum += s_Hist[threadIdx.x + i * 64] ;
         }
 
-        d_PartialHistograms[blockIdx.x * HISTOGRAM256_BIN_COUNT + bin] = sum;
+        d_PartialHistograms[blockIdx.x * HISTOGRAM64_BIN_COUNT + threadIdx.x] = sum;
     }
 }
 
@@ -189,6 +188,7 @@ void histogram64(unsigned int *d_Histogram,unsigned char *d_Data,unsigned int by
     #ifdef K4
     QDEBUG("enter private kernel")
     histogram64Kernel_private<<<gridSize,blockSize>>>(partial_histo,d_Data,byteCount);
+    QDEBUG("finish private kernel")
     getLastCudaError("compute() execution failed\n");
     
     mergeHistogram64Kernel<<<64,MERGE_THREADBLOCK_SIZE>>>(d_Histogram,partial_histo,gridSize);
