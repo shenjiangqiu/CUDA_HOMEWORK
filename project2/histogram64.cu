@@ -11,6 +11,8 @@ using namespace std;
 #include "histogram_common.h"
 #include<parseOprand.hpp>
 #include<log.hpp>
+
+
 __global__ void naiveKernel64(unsigned int *histo,unsigned char *data,int dim){
     
     int allThreads=gridDim.x*blockDim.x;
@@ -24,15 +26,21 @@ __global__ void naiveKernel64(unsigned int *histo,unsigned char *data,int dim){
     for(int i=0;i<numbers;i++){
         int curr=base+i;
         if(curr<dim){
-            atomicAdd(histo+data[curr],1);
+            unsigned char t_data=data[curr];
+
+            unsigned int pos=(t_data>>2)&0x3FU;
+
+            atomicAdd(histo+pos,1);
         }
     }
 
 }
 
+__global__ void baseKernel64(unsigned int *histo,unsigned char *data,int dim)
+
 void histogram64(unsigned int *d_Histogram,unsigned char *d_Data,unsigned int byteCount){
-    int blockSize=6*32;//6 warp per block
-    int gridSize=240;
+    const int blockSize=6*32;//6 warp per block
+    const int gridSize=240;
     naiveKernel64<<<gridSize,blockSize>>>(d_Histogram,d_Data,byteCount);
 }
 
