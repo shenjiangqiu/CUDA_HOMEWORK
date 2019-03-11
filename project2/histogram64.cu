@@ -181,7 +181,7 @@ void histogram64(unsigned int *d_Histogram,unsigned char *d_Data,unsigned int by
     #ifdef K3
     QDEBUG("enter base_share");
     baseKernel64_share<<<gridSize,blockSize>>>(partial_histo,d_Data,byteCount);
-    etLastCudaError("compute() execution failed\n");
+    getLastCudaError("compute() execution failed\n");
     mergeHistogram64Kernel<<<64,MERGE_THREADBLOCK_SIZE>>>(d_Histogram,partial_histo,gridSize);
     getLastCudaError("merge() execution failed\n");
 
