@@ -100,7 +100,7 @@ __global__ void mergeHistogram64Kernel(
 
     for (uint stride = MERGE_THREADBLOCK_SIZE / 2; stride > 0; stride >>= 1)
     {
-        
+        __syncthread();
 
         if (threadIdx.x < stride)
         {
