@@ -77,6 +77,54 @@ __global__ void baseKernel64_share(unsigned int *partial_histo,unsigned char *d_
     
 
 }
+
+__global__ void histogram64Kernel_private(uint *d_PartialHistograms, uchar *d_Data, uint dataCount)
+{
+    // Handle to thread block group
+    
+    //Per-warp subhistogram storage
+    unsigned all_threads=gridDim.x*blockDim.x;
+    __shared__ uint s_Hist[6*64];//every warp have a private histogram bin
+    uint *s_WarpHist= s_Hist + (threadIdx.x >> LOG2_WARP_SIZE) * HISTOGRAM64_BIN_COUNT;//the warps start point
+
+    //Clear shared memory storage for current threadblock before processing
+#pragma unroll
+
+    int curr_index=threadIdx.x;
+    while(curr_index<6*64){//totoal size of shared memory
+        s_Hist[curr_index]=0;
+        curr_index+=blockDim.x;
+    }
+
+
+
+    __syncthreads();
+
+    curr_index=threadIdx.x;
+    while(curr_index<dataCount){
+        unsigned char data=d_Data[curr_index];
+        atomicAdd(s_WarpHist+((data>>2)&0x3FU),1);
+        curr_index+=all_threads;
+    }
+
+    //Merge per-warp histograms into per-block and write to global memory
+    __syncthreads();
+    
+
+    for (uint bin = threadIdx.x; bin < 64; bin += 6*32)
+    {
+        uint sum = 0;
+
+        for (uint i = 0; i < WARP_COUNT; i++)
+        {
+            sum += s_Hist[bin + i * 64] ;
+        }
+
+        d_PartialHistograms[blockIdx.x * HISTOGRAM256_BIN_COUNT + bin] = sum;
+    }
+}
+
+
 __global__ void mergeHistogram64Kernel(
     uint *d_Histogram,
     uint *d_PartialHistograms,
@@ -138,7 +186,14 @@ void histogram64(unsigned int *d_Histogram,unsigned char *d_Data,unsigned int by
     mergeHistogram64Kernel<<<64,MERGE_THREADBLOCK_SIZE>>>(d_Histogram,partial_histo,gridSize);
     return;
     #endif
-
+    #ifdef K4
+    QDEBUG("enter private kernel")
+    histogram64Kernel_private(partial_histo,d_Data,byteCount);
+    
+    mergeHistogram64Kernel<<<64,MERGE_THREADBLOCK_SIZE>>>(d_Histogram,partial_histo,gridSize);
+    return;
+    #endif
+    
     QERROR("NO Kernel selected!");
 }
 
