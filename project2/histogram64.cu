@@ -188,12 +188,12 @@ void histogram64(unsigned int *d_Histogram,unsigned char *d_Data,unsigned int by
     #endif
     #ifdef K4
     QDEBUG("enter private kernel")
-    histogram64Kernel_private(partial_histo,d_Data,byteCount);
+    histogram64Kernel_private<<<gridSize,blockSize>>>(partial_histo,d_Data,byteCount);
     
     mergeHistogram64Kernel<<<64,MERGE_THREADBLOCK_SIZE>>>(d_Histogram,partial_histo,gridSize);
     return;
     #endif
-    
+
     QERROR("NO Kernel selected!");
 }
 
