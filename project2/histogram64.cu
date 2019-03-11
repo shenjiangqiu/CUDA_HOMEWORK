@@ -237,7 +237,10 @@ int main(int argc,char**argv){
     printf("...allocating GPU memory and copying input data\n\n");
     checkCudaErrors(cudaMalloc((void **)&d_Data, byteCount));
     checkCudaErrors(cudaMalloc((void **)&d_Histogram, 64 * sizeof(uint)));
-    #ifdef K3
+    #ifdef K3 
+    checkCudaErrors(cudaMalloc((void **)&d_partial_histo,240*64*sizeof(uint)));
+    #endif
+    #ifdef K4
     checkCudaErrors(cudaMalloc((void **)&d_partial_histo,240*64*sizeof(uint)));
     #endif
     checkCudaErrors(cudaMemcpy(d_Data, h_Data, byteCount, cudaMemcpyHostToDevice));
