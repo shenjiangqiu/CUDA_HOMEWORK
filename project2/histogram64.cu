@@ -193,7 +193,7 @@ void histogram64(unsigned int *d_Histogram,unsigned char *d_Data,unsigned int by
     uint* test=new uint[100];
     getLastCudaError("compute() execution failed\n");
     cudaDeviceSynchronize();
-    checkCudaErrors(cudaMemcpy(test,partial_histo,100*sizeof(uint),cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(test,partial_histo,64*sizeof(uint),cudaMemcpyDeviceToHost));
     for(int i=0;i<100;i++){
         QDEBUG(test[i]);
     }
@@ -203,8 +203,8 @@ void histogram64(unsigned int *d_Histogram,unsigned char *d_Data,unsigned int by
     mergeHistogram64Kernel<<<64,MERGE_THREADBLOCK_SIZE>>>(d_Histogram,partial_histo,gridSize);
     getLastCudaError("merge() execution failed\n");
     cudaDeviceSynchronize();
-    checkCudaErrors(cudaMemcpy(test,d_Histogram,100*sizeof(uint),cudaMemcpyDeviceToHost));
-    for(int i=0;i<100;i++){
+    checkCudaErrors(cudaMemcpy(test,d_Histogram,64*sizeof(uint),cudaMemcpyDeviceToHost));
+    for(int i=0;i<64;i++){
         QDEBUG(test[i]);
     }
     delete[] test;
