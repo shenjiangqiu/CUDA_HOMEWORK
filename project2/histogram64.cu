@@ -190,7 +190,7 @@ void histogram64(unsigned int *d_Histogram,unsigned char *d_Data,unsigned int by
     #ifdef K4
     QDEBUG("enter private kernel")
     histogram64Kernel_private<<<gridSize,blockSize>>>(partial_histo,d_Data,byteCount);
-    uint* test=new int[100];
+    uint* test=new uint[100];
     cudaMemcpy(test,partial_histo,100*sizeof(uint),cudaMemcpyDeviceToHost);
     for(int i=0;i<100;i++){
         QDEBUG(test[i]);
@@ -204,6 +204,7 @@ void histogram64(unsigned int *d_Histogram,unsigned char *d_Data,unsigned int by
     for(int i=0;i<100;i++){
         QDEBUG(test[i]);
     }
+    delete[] test;
     return;
     #endif
 
