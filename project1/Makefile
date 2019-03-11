@@ -21,8 +21,12 @@ CCFLAGS = -O3 -std=c++11 -Wall  $(DEFINE)
 LIB = -L/opt/cuda/lib64/ -lcudart -lpthread
 INC=-I/opt/cuda/include -I../inc -Iinc -Isrc
 
-all:$(BUILDPATH)/TiledMatrixMul 
-src/TiledMatrixMul.cu:src/TiledMatrixMul_kernel.cu
+all:makedir $(BUILDPATH)/TiledMatrixMul  
+
+makedir:
+	if [ ! -d build ];then mkdir build;fi;
+
+src/TiledMatrixMul.cu:src/TiledMatrixMul_kernel.cu makedir
 	touch $@
 $(BUILDPATH)/TiledMatrixMul:$(BUILDPATH)/TiledMatrixMul.cu_o  $(BUILDPATH)/parseOprand.cc_o
 	g++  $(CCFLAGS) $^ $(LIB) -o $@;
