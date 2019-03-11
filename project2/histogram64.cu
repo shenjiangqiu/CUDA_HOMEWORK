@@ -116,7 +116,7 @@ __global__ void histogram64Kernel_private(uint *d_PartialHistograms, uchar *d_Da
 
         for (uint i = 0; i < WARP_COUNT; i++)
         {
-            sum += s_Hist[threadIdx.x + i * 64] ;
+            sum += s_Hist[threadIdx.x + i * 64] & 0xFFFFFFFFU;
         }
 
         d_PartialHistograms[blockIdx.x * HISTOGRAM64_BIN_COUNT + threadIdx.x] = sum;
