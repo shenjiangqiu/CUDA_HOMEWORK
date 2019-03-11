@@ -8,7 +8,8 @@
                 "/opt/cuda/include/*",
                 "/usr/include/linux",
                 "/usr/include/c++/8.2.1/tr1",
-                "${workspaceFolder}/project1/src"
+                "${workspaceFolder}/project1/src",
+                "/usr/local/cuda/include"
             ],
             "defines": [],
             "compilerPath": "/opt/cuda/bin/gcc",

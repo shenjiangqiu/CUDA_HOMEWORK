@@ -24,8 +24,8 @@ extern "C" void histogram64CPU(
 {
     for (uint i = 0; i < HISTOGRAM64_BIN_COUNT; i++)
         h_Histogram[i] = 0;
-
-    assert(sizeof(uint) == 4 && (byteCount % 4) == 0);
+    int remain=byteCount%4;
+    //assert(sizeof(uint) == 4 && (byteCount % 4) == 0);
 
     for (uint i = 0; i < (byteCount / 4); i++)
     {
@@ -34,6 +34,11 @@ extern "C" void histogram64CPU(
         h_Histogram[(data >> 10) & 0x3FU]++;
         h_Histogram[(data >> 18) & 0x3FU]++;
         h_Histogram[(data >> 26) & 0x3FU]++;
+    }
+
+    for(int i=0;i<remain;i++){//for arbitary input size
+        unsigned char data=((unsigned char*)h_Data)[byteCount-remain+i];
+        h_Histogram[(data>>2)&0x3FU]++;
     }
 }
 

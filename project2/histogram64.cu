@@ -15,6 +15,7 @@ __global__ void naiveKernel64(unsigned int *histo,unsigned char *data,int dim){
     
     int allThreads=gridDim.x*blockDim.x;
     int index=threadIdx.x+blockIdx.x*blockDim.x;
+    
     if(index<64){
         histo[index]=0;
     }
@@ -30,8 +31,8 @@ __global__ void naiveKernel64(unsigned int *histo,unsigned char *data,int dim){
 }
 
 void histogram64(unsigned int *d_Histogram,unsigned char *d_Data,unsigned int byteCount){
-    int blockSize=512;
-    int gridSize=(byteCount+blockSize-1)/blockSize;
+    int blockSize=6*32;//6 warp per block
+    int gridSize=240;
     naiveKernel64<<<gridSize,blockSize>>>(d_Histogram,d_Data,byteCount);
 }
 
