@@ -12,7 +12,7 @@ using namespace std;
 #include<parseOprand.hpp>
 #include<log.hpp>
 
-
+#define MERGE_THREADBLOCK_SIZE 256
 __global__ void naiveKernel64(unsigned int *histo,unsigned char *data,int dim){
     
     int allThreads=gridDim.x*blockDim.x;
@@ -53,20 +53,89 @@ __global__ void baseKernel64(unsigned int *histo,unsigned char *d_data,int dim){
         index+=allThreads;
     }
 }
+__global__ void baseKernel64_share(unsigned int *partial_histo,unsigned char *d_data,int dim){
+    __shared__ unsigned share_hist[64];
+    if(threadIdx.x<64){
+        share_hist[threadIdx.x]=0;//init
+    }
+    unsigned allThreads=gridDim.x*blockDim.x;
+    unsigned index=threadIdx.x+blockIdx.x*blockDim.x;
+    
+
+    int i=0;
+    while(index<dim){
+        unsigned char t_data=d_data[index];
+
+        unsigned int pos=(t_data>>2)&0x3FU;
+
+        atomicAdd(share_hist+pos,1);
+        index+=allThreads;
+    }
+    __syncthreads(); 
+    if(threadIdx.x<HISTOGRAM64_BIN_COUNT)
+        partial_histo[blockIdx.x * HISTOGRAM64_BIN_COUNT + threadIdx.x] = share_hist[threadIdx.x];
+    
+
+}
+__global__ void mergeHistogram64Kernel(
+    uint *d_Histogram,
+    uint *d_PartialHistograms,
+    uint histogramCount
+)
+{
+    //in this kernel ,each block culculate one byte in bin,we need 64 blocks,and 256 threads,each thread read seperate
+
+    // Handle to thread block group
+    //cg::thread_block cta = cg::this_thread_block();
+
+    uint sum = 0;
+
+    for (uint i = threadIdx.x; i < histogramCount; i += MERGE_THREADBLOCK_SIZE)//this read is not coalesed
+    {
+        sum += d_PartialHistograms[blockIdx.x + i * HISTOGRAM64_BIN_COUNT];
+    }
+
+    __shared__ uint data[MERGE_THREADBLOCK_SIZE];
+    data[threadIdx.x] = sum;
+
+    for (uint stride = MERGE_THREADBLOCK_SIZE / 2; stride > 0; stride >>= 1)
+    {
+        
+
+        if (threadIdx.x < stride)
+        {
+            data[threadIdx.x] += data[threadIdx.x + stride];
+        }
+    }
+
+    if (threadIdx.x == 0)
+    {
+        d_Histogram[blockIdx.x] = data[0];
+    }
+}
 
 
-void histogram64(unsigned int *d_Histogram,unsigned char *d_Data,unsigned int byteCount){
+void histogram64(unsigned int *d_Histogram,unsigned char *d_Data,unsigned int byteCount,unsigned* partial_histo=nullptr){
     const int blockSize=6*32;//6 warp per block
     const int gridSize=240;
-    #ifdef KERNEL_NAIVE
+    #ifdef K1
     QDEBUG("enter naive");
     naiveKernel64<<<gridSize,blockSize>>>(d_Histogram,d_Data,byteCount);
     return;
-    #endif;
+    #endif
 
-    #ifdef KERNEL_BASE
+    #ifdef K2
     QDEBUG("enter base");
     baseKernel64<<<gridSize,blockSize>>>(d_Histogram,d_Data,byteCount);
+    //mergeHistogram64Kernel<<<64,MERGE_THREADBLOCK_SIZE>>>(d_Histogram,partial_histo,gridSize);
+    return;
+    #endif
+
+    #ifdef K3
+    QDEBUG("enter base_share");
+    baseKernel64_share<<<gridSize,blockSize>>>(partial_histo,d_Data,byteCount);
+    
+    mergeHistogram64Kernel<<<64,MERGE_THREADBLOCK_SIZE>>>(d_Histogram,partial_histo,gridSize);
     return;
     #endif
 
@@ -82,7 +151,7 @@ int main(int argc,char**argv){
     uchar *h_Data;
     uint  *h_HistogramCPU, *h_HistogramGPU;
     uchar *d_Data;
-    uint  *d_Histogram;
+    uint  *d_Histogram,*d_partial_histo;
     StopWatchInterface *hTimer = nullptr;
     int PassFailFlag = 1;
     uint byteCount = dim;//modified,the byteCount can be arbitary number
@@ -109,6 +178,9 @@ int main(int argc,char**argv){
     printf("...allocating GPU memory and copying input data\n\n");
     checkCudaErrors(cudaMalloc((void **)&d_Data, byteCount));
     checkCudaErrors(cudaMalloc((void **)&d_Histogram, 64 * sizeof(uint)));
+    #ifdef K3
+    checkCudaErrors(cudaMalloc((void **)&d_partial_histo,240*64*sizeof(uint)));
+    #endif
     checkCudaErrors(cudaMemcpy(d_Data, h_Data, byteCount, cudaMemcpyHostToDevice));
     //checkCudaErrors(cudaMemcpy(d_Histogram, h_HistogramGPU, 64*sizeof(unsigned int), cudaMemcpyHostToDevice));
     
@@ -117,14 +189,14 @@ int main(int argc,char**argv){
     //start the kernel
 
     
-    histogram64(d_Histogram,d_Data,byteCount);//warm up
+    histogram64(d_Histogram,d_Data,byteCount,d_partial_histo);//warm up
 
     cudaDeviceSynchronize();
     sdkResetTimer(&hTimer);
     sdkStartTimer(&hTimer);
 
     for(int i=0;i<16;i++)//run test for 16 times
-        histogram64(d_Histogram,d_Data,byteCount);
+        histogram64(d_Histogram,d_Data,byteCount,d_partial_histo);
     cudaDeviceSynchronize();
 
     sdkStopTimer(&hTimer);
