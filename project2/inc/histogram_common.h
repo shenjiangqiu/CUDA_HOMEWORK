@@ -51,13 +51,13 @@ typedef unsigned char uchar;
 ////////////////////////////////////////////////////////////////////////////////
 extern "C" void histogram64CPU(
     uint *h_Histogram,
-    void *h_Data,
+    unsigned char *h_Data,
     uint byteCount
 );
 
 extern "C" void histogram256CPU(
     uint *h_Histogram,
-    void *h_Data,
+    unsigned char *h_Data,
     uint byteCount
 );
 

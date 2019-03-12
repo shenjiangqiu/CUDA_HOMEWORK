@@ -39,21 +39,19 @@ extern "C" void histogram64CPU(
 
 extern "C" void histogram256CPU(
     uint *h_Histogram,
-    void *h_Data,
+    unsigned char *h_Data,
     uint byteCount
 )
 {
     for (uint i = 0; i < HISTOGRAM256_BIN_COUNT; i++)
         h_Histogram[i] = 0;
 
-    assert(sizeof(uint) == 4 && (byteCount % 4) == 0);
+    //assert(sizeof(uint) == 4 && (byteCount % 4) == 0);
 
-    for (uint i = 0; i < (byteCount / 4); i++)
+    for (uint i = 0; i < (byteCount ); i++)
     {
-        uint data = ((uint *)h_Data)[i];
+        char data = (h_Data)[i];
         h_Histogram[(data >>  0) & 0xFFU]++;
-        h_Histogram[(data >>  8) & 0xFFU]++;
-        h_Histogram[(data >> 16) & 0xFFU]++;
-        h_Histogram[(data >> 24) & 0xFFU]++;
+        
     }
 }
