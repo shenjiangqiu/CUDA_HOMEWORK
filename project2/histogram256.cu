@@ -303,7 +303,7 @@ int main(int argc,char**argv){
     #ifdef K0
     sdkResetTimer(&hTimer);
     sdkStartTimer(&hTimer);
-    for(int =0;i<16;i++)
+    for(int i=0;i<16;i++)
     histogram256CPU(
         h_HistogramCPU,
         h_Data,
