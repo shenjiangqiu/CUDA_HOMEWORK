@@ -164,7 +164,7 @@ __global__ void mergeHistogram64Kernel(
 
 void histogram64(unsigned int *d_Histogram,unsigned char *d_Data,unsigned int byteCount,unsigned* partial_histo=nullptr){
     const int blockSize=6*32;//6 warp per block
-    const int gridSize=240;
+    const int gridSize=256;
     #ifdef K1
     //QDEBUG("enter naive");
     naiveKernel64<<<gridSize,blockSize>>>(d_Histogram,d_Data,byteCount);
@@ -181,33 +181,19 @@ void histogram64(unsigned int *d_Histogram,unsigned char *d_Data,unsigned int by
     #ifdef K3
     //QDEBUG("enter base_share");
     baseKernel64_share<<<gridSize,blockSize>>>(partial_histo,d_Data,byteCount);
-    getLastCudaError("compute() execution failed\n");
+    //getLastCudaError("compute() execution failed\n");
     mergeHistogram64Kernel<<<64,MERGE_THREADBLOCK_SIZE>>>(d_Histogram,partial_histo,gridSize);
-    getLastCudaError("merge() execution failed\n");
+    //getLastCudaError("merge() execution failed\n");
 
     return;
     #endif
     #ifdef K4
     //QDEBUG("enter private kernel")
     histogram64Kernel_private<<<gridSize,blockSize>>>(partial_histo,d_Data,byteCount);
-    uint* test=new uint[100];
-    getLastCudaError("compute() execution failed\n");
-    cudaDeviceSynchronize();
-    checkCudaErrors(cudaMemcpy(test,partial_histo,64*sizeof(uint),cudaMemcpyDeviceToHost));
-    for(int i=0;i<100;i++){
-        //QDEBUG(test[i]);
-    }
-    //QDEBUG("finish private kernel")
-    cudaDeviceSynchronize();
+    
     
     mergeHistogram64Kernel<<<64,MERGE_THREADBLOCK_SIZE>>>(d_Histogram,partial_histo,gridSize);
-    getLastCudaError("merge() execution failed\n");
-    cudaDeviceSynchronize();
-    checkCudaErrors(cudaMemcpy(test,d_Histogram,64*sizeof(uint),cudaMemcpyDeviceToHost));
-    for(int i=0;i<64;i++){
-        //QDEBUG(test[i]);
-    }
-    delete[] test;
+  
     return;
     #endif
 
@@ -251,10 +237,10 @@ int main(int argc,char**argv){
     checkCudaErrors(cudaMalloc((void **)&d_Data, byteCount));
     checkCudaErrors(cudaMalloc((void **)&d_Histogram, 64 * sizeof(uint)));
     #ifdef K3 
-    checkCudaErrors(cudaMalloc((void **)&d_partial_histo,240*64*sizeof(uint)));
+    checkCudaErrors(cudaMalloc((void **)&d_partial_histo,256*64*sizeof(uint)));
     #endif
     #ifdef K4
-    checkCudaErrors(cudaMalloc((void **)&d_partial_histo,240*64*sizeof(uint)));
+    checkCudaErrors(cudaMalloc((void **)&d_partial_histo,256*64*sizeof(uint)));
     #endif
     checkCudaErrors(cudaMemcpy(d_Data, h_Data, byteCount, cudaMemcpyHostToDevice));
     //checkCudaErrors(cudaMemcpy(d_Histogram, h_HistogramGPU, 64*sizeof(unsigned int), cudaMemcpyHostToDevice));
@@ -308,13 +294,14 @@ int main(int argc,char**argv){
     #ifdef K0
     sdkResetTimer(&hTimer);
     sdkStartTimer(&hTimer);
+    for(int i=0;i<16;i++)
     histogram64CPU(
         h_HistogramCPU,
         h_Data,
         byteCount
     );
     sdkStopTimer(&hTimer);
-    double dAvgSecs = 1.0e-3 * (double)sdkGetTimerValue(&hTimer) / (double)1;
+    double dAvgSecs = 1.0e-3 * (double)sdkGetTimerValue(&hTimer) / (double)16;
 
     printf("histogram64Cpu() time (average) : %.5f sec, %.4f MB/sec\n\n", dAvgSecs, ((double)byteCount * 1.0e-6) / dAvgSecs);
     printf("histogram64, Throughput = %.4f MB/s, Time = %.5f s, Size = %u Bytes, NumDevsUsed = %u, Workgroup = %u\n",
