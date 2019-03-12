@@ -100,7 +100,7 @@ __global__ void histogram64Kernel_private(uint *d_PartialHistograms, uchar *d_Da
 
     __syncthreads();
 
-    curr_index=threadIdx.x;
+    curr_index=threadIdx.x+blockDim.x*blockIdx.x;
     while(curr_index<dataCount){
         unsigned char data=d_Data[curr_index];
         atomicAdd(s_WarpHist+((data>>2)&0x3FU),1);
