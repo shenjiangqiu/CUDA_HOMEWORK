@@ -1,4 +1,4 @@
-target=64_k0 64_k1 64_k2 64_k3 64_k4 256_k0 256_k1 256_k2 256_k3 256_k4
+target:64_k0 64_k1 64_k2 64_k3 64_k4 256_k0 256_k1 256_k2 256_k3 256_k4
 
 64_k0:histogram64.cu parseOprand.cc histogram_gold.cpp
 	nvcc histogram64.cu parseOprand.cc histogram_gold.cpp -Iinc  -O3  -DK0 -o 64_k0
