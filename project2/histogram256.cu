@@ -119,7 +119,7 @@ __global__ void histogram256Kernel_private(uint *d_PartialHistograms, uchar *d_D
     //Merge per-warp histograms into per-block and write to global memory
     __syncthreads();
     uint sum = 0;
-    index=threadIdx.x;
+    unsigned index=threadIdx.x;
     while(index<256){
         
 
