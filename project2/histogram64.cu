@@ -314,7 +314,7 @@ int main(int argc,char**argv){
         byteCount
     );
     sdkStopTimer(&hTimer);
-    dAvgSecs = 1.0e-3 * (double)sdkGetTimerValue(&hTimer) / (double)1;
+    double dAvgSecs = 1.0e-3 * (double)sdkGetTimerValue(&hTimer) / (double)1;
 
     printf("histogram64Cpu() time (average) : %.5f sec, %.4f MB/sec\n\n", dAvgSecs, ((double)byteCount * 1.0e-6) / dAvgSecs);
     printf("histogram64, Throughput = %.4f MB/s, Time = %.5f s, Size = %u Bytes, NumDevsUsed = %u, Workgroup = %u\n",
