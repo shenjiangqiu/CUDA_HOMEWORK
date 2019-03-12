@@ -166,20 +166,20 @@ void histogram64(unsigned int *d_Histogram,unsigned char *d_Data,unsigned int by
     const int blockSize=6*32;//6 warp per block
     const int gridSize=240;
     #ifdef K1
-    QDEBUG("enter naive");
+    //QDEBUG("enter naive");
     naiveKernel64<<<gridSize,blockSize>>>(d_Histogram,d_Data,byteCount);
     return;
     #endif
 
     #ifdef K2
-    QDEBUG("enter base");
+    //QDEBUG("enter base");
     baseKernel64<<<gridSize,blockSize>>>(d_Histogram,d_Data,byteCount);
     //mergeHistogram64Kernel<<<64,MERGE_THREADBLOCK_SIZE>>>(d_Histogram,partial_histo,gridSize);
     return;
     #endif
 
     #ifdef K3
-    QDEBUG("enter base_share");
+    //QDEBUG("enter base_share");
     baseKernel64_share<<<gridSize,blockSize>>>(partial_histo,d_Data,byteCount);
     getLastCudaError("compute() execution failed\n");
     mergeHistogram64Kernel<<<64,MERGE_THREADBLOCK_SIZE>>>(d_Histogram,partial_histo,gridSize);
@@ -188,16 +188,16 @@ void histogram64(unsigned int *d_Histogram,unsigned char *d_Data,unsigned int by
     return;
     #endif
     #ifdef K4
-    QDEBUG("enter private kernel")
+    //QDEBUG("enter private kernel")
     histogram64Kernel_private<<<gridSize,blockSize>>>(partial_histo,d_Data,byteCount);
     uint* test=new uint[100];
     getLastCudaError("compute() execution failed\n");
     cudaDeviceSynchronize();
     checkCudaErrors(cudaMemcpy(test,partial_histo,64*sizeof(uint),cudaMemcpyDeviceToHost));
     for(int i=0;i<100;i++){
-        QDEBUG(test[i]);
+        //QDEBUG(test[i]);
     }
-    QDEBUG("finish private kernel")
+    //QDEBUG("finish private kernel")
     cudaDeviceSynchronize();
     
     mergeHistogram64Kernel<<<64,MERGE_THREADBLOCK_SIZE>>>(d_Histogram,partial_histo,gridSize);
@@ -205,7 +205,7 @@ void histogram64(unsigned int *d_Histogram,unsigned char *d_Data,unsigned int by
     cudaDeviceSynchronize();
     checkCudaErrors(cudaMemcpy(test,d_Histogram,64*sizeof(uint),cudaMemcpyDeviceToHost));
     for(int i=0;i<64;i++){
-        QDEBUG(test[i]);
+        //QDEBUG(test[i]);
     }
     delete[] test;
     return;
@@ -304,7 +304,7 @@ int main(int argc,char**argv){
     printf("Shutting down 64-bin histogram...\n\n\n");
     #endif
 
-    
+
     #ifdef K0
     sdkResetTimer(&hTimer);
     sdkStartTimer(&hTimer);
