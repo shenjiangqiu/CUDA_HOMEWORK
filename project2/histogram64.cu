@@ -166,34 +166,23 @@ void histogram64(unsigned int *d_Histogram,unsigned char *d_Data,unsigned int by
     const int blockSize=6*32;//6 warp per block
     const int gridSize=256;
     #ifdef K1
-    //QDEBUG("enter naive");
     naiveKernel64<<<gridSize,blockSize>>>(d_Histogram,d_Data,byteCount);
     return;
     #endif
 
     #ifdef K2
-    //QDEBUG("enter base");
     baseKernel64<<<gridSize,blockSize>>>(d_Histogram,d_Data,byteCount);
-    //mergeHistogram64Kernel<<<64,MERGE_THREADBLOCK_SIZE>>>(d_Histogram,partial_histo,gridSize);
     return;
     #endif
 
     #ifdef K3
-    //QDEBUG("enter base_share");
     baseKernel64_share<<<gridSize,blockSize>>>(partial_histo,d_Data,byteCount);
-    //getLastCudaError("compute() execution failed\n");
     mergeHistogram64Kernel<<<64,MERGE_THREADBLOCK_SIZE>>>(d_Histogram,partial_histo,gridSize);
-    //getLastCudaError("merge() execution failed\n");
-
     return;
     #endif
     #ifdef K4
-    //QDEBUG("enter private kernel")
     histogram64Kernel_private<<<gridSize,blockSize>>>(partial_histo,d_Data,byteCount);
-    
-    
     mergeHistogram64Kernel<<<64,MERGE_THREADBLOCK_SIZE>>>(d_Histogram,partial_histo,gridSize);
-  
     return;
     #endif
 
