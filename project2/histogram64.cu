@@ -246,7 +246,7 @@ int main(int argc,char**argv){
     for(uint i=0;i<64;i++){
         h_HistogramGPU[i]=0;
     }
-
+    #ifndef K0
     printf("...allocating GPU memory and copying input data\n\n");
     checkCudaErrors(cudaMalloc((void **)&d_Data, byteCount));
     checkCudaErrors(cudaMalloc((void **)&d_Histogram, 64 * sizeof(uint)));
@@ -275,7 +275,7 @@ int main(int argc,char**argv){
     cudaDeviceSynchronize();
 
     sdkStopTimer(&hTimer);
-    double dAvgSecs = 1.0e-3 * (double)sdkGetTimerValue(&hTimer) / (double)1;
+    double dAvgSecs = 1.0e-3 * (double)sdkGetTimerValue(&hTimer) / (double)16;
     printf("histogram64() time (average) : %.5f sec, %.4f MB/sec\n\n", dAvgSecs, ((double)byteCount * 1.0e-6) / dAvgSecs);
     printf("histogram64, Throughput = %.4f MB/s, Time = %.5f s, Size = %u Bytes, NumDevsUsed = %u, Workgroup = %u\n",
            (1.0e-6 * (double)byteCount / dAvgSecs), dAvgSecs, byteCount, 1, 6*32);
@@ -285,23 +285,47 @@ int main(int argc,char**argv){
     checkCudaErrors(cudaMemcpy(h_HistogramGPU, d_Histogram, HISTOGRAM64_BIN_COUNT * sizeof(uint), cudaMemcpyDeviceToHost));
 
     printf(" ...histogram64CPU()\n");
+    #endif
     histogram64CPU(
         h_HistogramCPU,
         h_Data,
         byteCount
     );
-
+    #ifndef K0
+    
     printf(" ...comparing the results...\n");
-
     for (uint i = 0; i < HISTOGRAM64_BIN_COUNT; i++)
         if (h_HistogramGPU[i] != h_HistogramCPU[i])
         {
             PassFailFlag = 0;
         }
-
     printf(PassFailFlag ? " ...64-bin histograms match\n\n" : " ***64-bin histograms do not match!!!***\n\n");
 
     printf("Shutting down 64-bin histogram...\n\n\n");
+    #endif
+
+    
+    #ifdef K0
+    sdkResetTimer(&hTimer);
+    sdkStartTimer(&hTimer);
+    histogram64CPU(
+        h_HistogramCPU,
+        h_Data,
+        byteCount
+    );
+    sdkStopTimer(&hTimer);
+    dAvgSecs = 1.0e-3 * (double)sdkGetTimerValue(&hTimer) / (double)1;
+
+    printf("histogram64Cpu() time (average) : %.5f sec, %.4f MB/sec\n\n", dAvgSecs, ((double)byteCount * 1.0e-6) / dAvgSecs);
+    printf("histogram64, Throughput = %.4f MB/s, Time = %.5f s, Size = %u Bytes, NumDevsUsed = %u, Workgroup = %u\n",
+           (1.0e-6 * (double)byteCount / dAvgSecs), dAvgSecs, byteCount, 1, 6*32);
+    #endif
+
+    
+
+    
+
+    
 
 
 }

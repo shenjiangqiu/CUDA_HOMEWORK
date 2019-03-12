@@ -18,7 +18,7 @@
 
 extern "C" void histogram64CPU(
     uint *h_Histogram,
-    void *h_Data,
+    unsigned char  *h_Data,
     uint byteCount
 )
 {
@@ -27,19 +27,12 @@ extern "C" void histogram64CPU(
     int remain=byteCount%4;
     //assert(sizeof(uint) == 4 && (byteCount % 4) == 0);
 
-    for (uint i = 0; i < (byteCount / 4); i++)
+    for (uint i = 0; i < byteCount ; i++)
     {
-        uint data = ((uint *)h_Data)[i];
+        uint data = h_Data[i];
         h_Histogram[(data >>  2) & 0x3FU]++;
-        h_Histogram[(data >> 10) & 0x3FU]++;
-        h_Histogram[(data >> 18) & 0x3FU]++;
-        h_Histogram[(data >> 26) & 0x3FU]++;
     }
 
-    for(int i=0;i<remain;i++){//for arbitary input size
-        unsigned char data=((unsigned char*)h_Data)[byteCount-remain+i];
-        h_Histogram[(data>>2)&0x3FU]++;
-    }
 }
 
 
