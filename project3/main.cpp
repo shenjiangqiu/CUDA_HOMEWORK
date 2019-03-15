@@ -42,7 +42,7 @@ int main(int argc, char **argv)
 {
 
     int x,y,z;
-    parseOpt(argc,argv,x,y,z);
+    parseOpt(argc,const_cast<const char**>( argv),x,y,z);
     return -1;
 
     float
