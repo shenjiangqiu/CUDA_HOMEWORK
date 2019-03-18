@@ -40,7 +40,7 @@ extern "C" void convolutionRowsCPU(
 
                 if (d >= imageW) d = imageW - 1;
 
-                sum += h_Src[y * imageW + d] * h_Kernel[kernelR - k];
+                sum += h_Src[y * imageW + d] * h_Kernel[kernelR + k];
             }
 
             h_Dst[y * imageW + x] = sum;
@@ -74,7 +74,7 @@ extern "C" void convolutionColumnsCPU(
 
                 if (d >= imageH) d = imageH - 1;
 
-                sum += h_Src[d * imageW + x] * h_Kernel[kernelR - k];
+                sum += h_Src[d * imageW + x] * h_Kernel[kernelR + k];
             }
 
             h_Dst[y * imageW + x] = sum;

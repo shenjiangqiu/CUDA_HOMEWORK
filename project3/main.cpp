@@ -42,8 +42,12 @@ int main(int argc, char **argv)
 {
 
     int x,y,z;
-    parseOpt(argc,argv,x,y,z);
-    return -1;
+    if(0!=parseOpt(argc,const_cast<const char**>( argv),x,y,z)){
+        QERROR("parse error,exiting");
+        return -1;
+    }
+    
+    
 
     float
     *h_Kernel,
@@ -58,6 +62,7 @@ int main(int argc, char **argv)
     cudaChannelFormatDesc floatTex = cudaCreateChannelDesc<float>();
 
     float
+    *d_Input,
     *d_Output;
 
     float
@@ -65,29 +70,37 @@ int main(int argc, char **argv)
 
     StopWatchInterface *hTimer = NULL;
 
-    const int imageW = 3072;
-    const int imageH = 3072 / 2;
-    const unsigned int iterations = 10;
+    StopWatchInterface *total = NULL;
+    sdkCreateTimer(&total);
+    sdkStartTimer(&total);
+    int imageW = x;
+    int imageH = y;
+    unsigned int iterations = 10;
 
     printf("[%s] - Starting...\n", argv[0]);
 
     // use command-line specified CUDA device, otherwise use device with highest Gflops/s
-    findCudaDevice(argc, (const char **)argv);
+    //findCudaDevice(argc, (const char **)argv);
 
     sdkCreateTimer(&hTimer);
-
+    unsigned kernel_length=z;
     printf("Initializing data...\n");
-    h_Kernel    = (float *)malloc(KERNEL_LENGTH * sizeof(float));
+    h_Kernel    = (float *)malloc(kernel_length * sizeof(float));
     h_Input     = (float *)malloc(imageW * imageH * sizeof(float));
     h_Buffer    = (float *)malloc(imageW * imageH * sizeof(float));
     h_OutputCPU = (float *)malloc(imageW * imageH * sizeof(float));
     h_OutputGPU = (float *)malloc(imageW * imageH * sizeof(float));
+    #ifdef GB
+    checkCudaErrors(cudaMalloc((void **)&d_Input, imageW * imageH * sizeof(float)));
+    #else
     checkCudaErrors(cudaMallocArray(&a_Src, &floatTex, imageW, imageH));
+    #endif
+    
     checkCudaErrors(cudaMalloc((void **)&d_Output, imageW * imageH * sizeof(float)));
 
     srand(2009);
 
-    for (unsigned int i = 0; i < KERNEL_LENGTH; i++)
+    for (unsigned int i = 0; i < kernel_length; i++)
     {
         h_Kernel[i] = (float)(rand() % 16);
     }
@@ -97,8 +110,17 @@ int main(int argc, char **argv)
         h_Input[i] = (float)(rand() % 16);
     }
 
-    setConvolutionKernel(h_Kernel);
+    setConvolutionKernel(h_Kernel
+    #ifndef OLD
+    ,
+    kernel_length
+    #endif
+    );
+    #ifdef GB
+    checkCudaErrors(cudaMemcpy(d_Input, h_Input, imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+    #else
     checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, h_Input, imageW * imageH * sizeof(float), cudaMemcpyHostToDevice));
+    #endif
 
 
     printf("Running GPU rows convolution (%u identical iterations)...\n", iterations);
@@ -109,10 +131,19 @@ int main(int argc, char **argv)
     for (unsigned int i = 0; i < iterations; i++)
     {
         convolutionRowsGPU(
+            #ifdef GB
+            d_Input,
+            #endif
             d_Output,
+            #ifndef GB
             a_Src,
+            #endif
             imageW,
             imageH
+            #ifndef OLD
+            ,
+            kernel_length
+            #endif
         );
     }
 
@@ -126,7 +157,11 @@ int main(int argc, char **argv)
     checkCudaErrors(cudaDeviceSynchronize());
     sdkResetTimer(&hTimer);
     sdkStartTimer(&hTimer);
+    #ifdef GB
+    checkCudaErrors(cudaMemcpy(d_Input, d_Output, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+    #else
     checkCudaErrors(cudaMemcpyToArray(a_Src, 0, 0, d_Output, imageW * imageH * sizeof(float), cudaMemcpyDeviceToDevice));
+    #endif
     checkCudaErrors(cudaDeviceSynchronize());
     sdkStopTimer(&hTimer);
     gpuTime = sdkGetTimerValue(&hTimer);
@@ -140,10 +175,19 @@ int main(int argc, char **argv)
     for (int i = 0; i < iterations; i++)
     {
         convolutionColumnsGPU(
+            #ifdef GB
+            d_Input,
+            #endif
             d_Output,
+            #ifndef GB
             a_Src,
+            #endif
             imageW,
             imageH
+            #ifndef OLD
+            ,
+            kernel_length
+            #endif
         );
     }
 
@@ -154,6 +198,10 @@ int main(int argc, char **argv)
 
     printf("Reading back GPU results...\n");
     checkCudaErrors(cudaMemcpy(h_OutputGPU, d_Output, imageW * imageH * sizeof(float), cudaMemcpyDeviceToHost));
+
+    sdkStopTimer(&total);
+    auto totoalTime=sdkGetTimerValue(&total);
+    printf("total time = %f: ",totoalTime);
 
     printf("Checking the results...\n");
     printf("...running convolutionRowsCPU()\n");
@@ -167,6 +215,8 @@ int main(int argc, char **argv)
     );
 
     printf("...running convolutionColumnsCPU()\n");
+    sdkResetTimer(&hTimer);
+    sdkStartTimer(&hTimer);
     convolutionColumnsCPU(
         h_OutputCPU,
         h_Buffer,
@@ -175,6 +225,9 @@ int main(int argc, char **argv)
         imageH,
         KERNEL_RADIUS
     );
+    sdkStopTimer(&hTimer);
+    gpuTime = sdkGetTimerValue(&hTimer);
+    printf("cpu time: %f,%f Mpix/s",gpuTime,imageW * imageH * 1e-6 / (0.001 * gpuTime));
 
     double delta = 0;
     double sum = 0;
