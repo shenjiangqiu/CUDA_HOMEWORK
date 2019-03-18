@@ -34,7 +34,6 @@
 ################################################################################
 
 # Location of the CUDA Toolkit
-CUDA_PATH?=/Developer/NVIDIA/CUDA-10.0
 
 ##############################
 # start deprecated interface #
@@ -147,7 +146,9 @@ else ifneq ($(TARGET_ARCH),$(HOST_ARCH))
         HOST_COMPILER ?= powerpc64le-linux-gnu-g++
     endif
 endif
+
 HOST_COMPILER ?= g++
+CUDA_PATH=/opt/cuda
 NVCC          := $(CUDA_PATH)/bin/nvcc -ccbin $(HOST_COMPILER)
 
 # internal flags
@@ -285,24 +286,24 @@ else
 endif
 
 convolutionTexture.o:convolutionTexture.cu
-	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
+	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $< -DGB
 
 convolutionTexture_gold.o:convolutionTexture_gold.cpp
-	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
+	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $< -DGB
 
 main.o:main.cpp
-	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
-
-convolutionTexture: convolutionTexture.o convolutionTexture_gold.o main.o
+	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $< -DGB
+	
+parseOprand.o:parseOprand.cc
+	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<  -DGB
+convolutionTexture: convolutionTexture.o convolutionTexture_gold.o main.o parseOprand.o
 	$(EXEC) $(NVCC) $(ALL_LDFLAGS) $(GENCODE_FLAGS) -o $@ $+ $(LIBRARIES)
-	$(EXEC) mkdir -p ../../bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)
-	$(EXEC) cp $@ ../../bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)
 
 run: build
 	$(EXEC) ./convolutionTexture
 
 clean:
-	rm -f convolutionTexture convolutionTexture.o convolutionTexture_gold.o main.o
-	rm -rf ../../bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)/convolutionTexture
+	rm -f convolutionTexture convolutionTexture.o convolutionTexture_gold.o main.o parseOprand.o
+	
 
 clobber: clean

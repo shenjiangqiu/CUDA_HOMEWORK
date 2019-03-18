@@ -31,13 +31,17 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Reference CPU convolution
 ////////////////////////////////////////////////////////////////////////////////
+
 extern "C" void convolutionRowsCPU(
     float *h_Dst,
     float *h_Src,
     float *h_Kernel,
     int imageW,
-    int imageH,
+    int imageH
+
+    ,
     int kernelR
+
 );
 
 extern "C" void convolutionColumnsCPU(
@@ -45,8 +49,11 @@ extern "C" void convolutionColumnsCPU(
     float *h_Src,
     float *h_Kernel,
     int imageW,
-    int imageH,
+    int imageH
+
+    ,
     int kernelR
+
 );
 
 
@@ -54,20 +61,43 @@ extern "C" void convolutionColumnsCPU(
 ////////////////////////////////////////////////////////////////////////////////
 // GPU texture-based convolution
 ////////////////////////////////////////////////////////////////////////////////
-extern "C" void setConvolutionKernel(float *h_Kernel);
+extern "C" void setConvolutionKernel(float *h_Kernel
+    #ifndef OLD
+    ,
+    int kernelR
+    #endif
+    );
 
 extern "C" void convolutionRowsGPU(
+    #ifdef GB
+    float *d_Input,
+    #endif
     float *d_Dst,
+    #ifndef GB
     cudaArray *a_Src,
+    #endif
     int imageW,
     int imageH
+    #ifndef OLD
+    ,
+    int kernelR
+    #endif
 );
 
 extern "C" void convolutionColumnsGPU(
+    #ifdef GB
+    float *d_Input,
+    #endif
     float *d_Dst,
+    #ifndef GB
     cudaArray *a_Src,
+    #endif
     int imageW,
     int imageH
+    #ifndef OLD
+    ,
+    int kernelR
+    #endif
 );
 
 

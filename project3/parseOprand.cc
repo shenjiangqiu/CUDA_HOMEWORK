@@ -52,9 +52,10 @@ int parseOpt(int argc,const char**argv,int &row,int &col,int &mask){
         QERROR( e.what());
         return -1;
     }
-    
-    if(row<=0 or col <=0 or mask <=0){
-        QERROR("dim can't less than 1");
+    QDEBUG(mask);
+    QDEBUG((mask&1U==0U))
+    if(row<=0 or col <=0 or mask <=0 or (mask%2==0U) ){
+        QERROR("dim can't less than 1, or the mask cant be even number");
         return -1;
     }
     
