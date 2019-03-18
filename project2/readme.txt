@@ -6,3 +6,5 @@ This sample demonstrates efficient implementation of 64-bin and 256-bin histogra
 Key concepts:
 Image Processing
 Data Parallel Algorithms
+
+modified by sjq
